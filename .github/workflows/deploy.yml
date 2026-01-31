@@ -84,9 +84,9 @@ jobs:
       # 11. Deploy Patient Service
       - name: Deploy Patient Service
         run: |
-          kubectl set image deployment/patient-deployment \
+          kubectl set image deployment/patient-service \
             patient=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/patient:v1
-          kubectl rollout status deployment/patient-deployment
+          kubectl rollout status deployment/patient-service
 
       # 12. Deploy Application Service
       - name: Deploy Application Service
