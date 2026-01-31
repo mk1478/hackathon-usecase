@@ -14,42 +14,47 @@ jobs:
       REPO: devops-hackathon
 
     steps:
-      # 1 Checkout the repo 
+      # 1 Checkout the repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2 Set up Google Cloud CLI
+      # 2 Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # 3 Set up gcloud CLI
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ env.PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
-          export_default_credentials: true
+          install_components: docker-credential-gcr
 
-      # 3 Configure Docker to use Artifact Registry
+      # 4 Configure Docker to use Artifact Registry
       - name: Configure Docker
         run: |
           gcloud auth configure-docker ${REGION}-docker.pkg.dev
 
-      # 4 Build and push order-service
+      # 5 Build and push order-service
       - name: Build and Push Order Service
         run: |
           docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/order:v1 ./order-service
           docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/order:v1
 
-      # 5 Build and push patient-service
+      # 6 Build and push patient-service
       - name: Build and Push Patient Service
         run: |
           docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/patient:v1 ./patient-service
           docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/patient:latest
 
-      # 6 Build and push application-service
+      # 7 Build and push application-service
       - name: Build and Push Application Service
         run: |
           docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:v1 ./application-service
           docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:latest
 
-      # 7 Deploy to GKE
+      # 8 Deploy to GKE
       - name: Set up Kubeconfig
         run: |
           gcloud container clusters get-credentials devops-hackathon \
@@ -70,5 +75,3 @@ jobs:
         run: |
           kubectl set image deployment/application-deployment application=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:latest
           kubectl rollout status deployment/application-deployment
-
-        
