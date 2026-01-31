@@ -49,5 +49,26 @@ jobs:
           docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:v1 ./application-service
           docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:latest
 
+      # 7 Deploy to GKE
+      - name: Set up Kubeconfig
+        run: |
+          gcloud container clusters get-credentials devops-hackathon \
+            --region ${REGION} \
+            --project ${PROJECT_ID}
+
+      - name: Deploy Order Service
+        run: |
+          kubectl set image deployment/order-deployment order=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/order:v1
+          kubectl rollout status deployment/order-deployment
+
+      - name: Deploy Patient Service
+        run: |
+          kubectl set image deployment/patient-deployment patient=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/patient:latest
+          kubectl rollout status deployment/patient-deployment
+
+      - name: Deploy Application Service
+        run: |
+          kubectl set image deployment/application-deployment application=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:latest
+          kubectl rollout status deployment/application-deployment
 
         
