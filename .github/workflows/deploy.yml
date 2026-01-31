@@ -61,6 +61,12 @@ jobs:
           docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:v1 ./application-service
           docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:v1
 
+      # Install GKE auth plugin
+      - name: Install GKE gcloud auth plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin -q
+          echo "export USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
+
       # 9. Set up kubeconfig for GKE
       - name: Set up Kubeconfig
         run: |
