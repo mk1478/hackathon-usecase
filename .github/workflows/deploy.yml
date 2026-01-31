@@ -1,4 +1,4 @@
-name: Build and Push Docker Images
+name: Build, Push Docker Images & Deploy to GKE
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
     env:
       PROJECT_ID: sapient-origin-370513
@@ -14,63 +14,72 @@ jobs:
       REPO: devops-hackathon
 
     steps:
-      # 1 Checkout the repo
+      # 1. Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2 Authenticate to Google Cloud
+      # 2. Authenticate to Google Cloud
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # 3 Set up gcloud CLI
+      # 3. Set up gcloud CLI
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ env.PROJECT_ID }}
           install_components: docker-credential-gcr
 
-      # 4 Configure Docker to use Artifact Registry
+      # 4. Configure Docker to use Artifact Registry
       - name: Configure Docker
         run: |
           gcloud auth configure-docker ${REGION}-docker.pkg.dev
 
-      # 5 Build and push order-service
+      # 5. Build and push order-service
       - name: Build and Push Order Service
         run: |
           docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/order:v1 ./order-service
           docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/order:v1
 
-      # 6 Build and push patient-service
+      # 6. Build and push patient-service
       - name: Build and Push Patient Service
         run: |
           docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/patient:v1 ./patient-service
           docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/patient:v1
 
-      # 7 Build and push application-service
+      # 7. Build and push application-service
       - name: Build and Push Application Service
         run: |
           docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:v1 ./application-service
           docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:v1
 
-      # 8 Deploy to GKE
+      # 8. Install GKE auth plugin
+      - name: Install GKE Auth Plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin -q
+          gcloud config set container/use_client_certificate True
+
+      # 9. Set up kubeconfig for GKE
       - name: Set up Kubeconfig
         run: |
           gcloud container clusters get-credentials devops-hackathon \
             --region ${REGION} \
             --project ${PROJECT_ID}
 
+      # 10. Deploy Order Service
       - name: Deploy Order Service
         run: |
           kubectl set image deployment/order-deployment order=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/order:v1
           kubectl rollout status deployment/order-deployment
 
+      # 11. Deploy Patient Service
       - name: Deploy Patient Service
         run: |
           kubectl set image deployment/patient-deployment patient=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/patient:v1
           kubectl rollout status deployment/patient-deployment
 
+      # 12. Deploy Application Service
       - name: Deploy Application Service
         run: |
           kubectl set image deployment/application-deployment application=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:v1
