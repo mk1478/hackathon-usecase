@@ -1,0 +1,53 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_ID: sapient-origin-370513
+      REGION: asia-south1
+      REPO: devops-hackathon
+
+    steps:
+      # 1 Checkout the repo
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2 Set up Google Cloud CLI
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+
+      # 3 Configure Docker to use Artifact Registry
+      - name: Configure Docker
+        run: |
+          gcloud auth configure-docker ${REGION}-docker.pkg.dev
+
+      # 4 Build and push order-service
+      - name: Build and Push Order Service
+        run: |
+          docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/order:v1 ./order-service
+          docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/order:v1
+
+      # 5 Build and push patient-service
+      - name: Build and Push Patient Service
+        run: |
+          docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/patient:v1 ./patient-service
+          docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/patient:latest
+
+      # 6 Build and push application-service
+      - name: Build and Push Application Service
+        run: |
+          docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:v1 ./application-service
+          docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:latest
+
+
+        
