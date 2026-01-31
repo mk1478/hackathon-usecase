@@ -46,13 +46,13 @@ jobs:
       - name: Build and Push Patient Service
         run: |
           docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/patient:v1 ./patient-service
-          docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/patient:latest
+          docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/patient:v1
 
       # 7 Build and push application-service
       - name: Build and Push Application Service
         run: |
           docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:v1 ./application-service
-          docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:latest
+          docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:v1
 
       # 8 Deploy to GKE
       - name: Set up Kubeconfig
@@ -68,10 +68,10 @@ jobs:
 
       - name: Deploy Patient Service
         run: |
-          kubectl set image deployment/patient-deployment patient=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/patient:latest
+          kubectl set image deployment/patient-deployment patient=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/patient:v1
           kubectl rollout status deployment/patient-deployment
 
       - name: Deploy Application Service
         run: |
-          kubectl set image deployment/application-deployment application=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:latest
+          kubectl set image deployment/application-deployment application=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/application:v1
           kubectl rollout status deployment/application-deployment
